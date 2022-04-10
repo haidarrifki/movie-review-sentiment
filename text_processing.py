@@ -28,7 +28,7 @@ client = MongoClient(connection_url)
 db_name = "skripsi"
 db = client[db_name]
 datasets_collection = db["datasets"]
-text_processings_collection = db["text_processings2"]
+text_processings_collection = db["text_processings"]
 # find datasets collection from mongodb
 datasets = datasets_collection.find()
 df = DataFrame(list(datasets))
