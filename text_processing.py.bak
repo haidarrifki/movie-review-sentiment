@@ -1,0 +1,97 @@
+import time
+
+start_time = time.time()
+
+import pymongo
+import re
+import nltk
+
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.stem.porter import PorterStemmer
+
+connection_url = "mongodb://localhost:27017/"  # MongoDB compass local host URL. You can replace the SRV string if you are connecting with mongodb atlas
+# connection_url = "mongodb+srv://ngadimin:uvIVS1HWYm6C9MVX@cluster0.sdb0e.mongodb.net/?retryWrites=true&w=majority"
+client = pymongo.MongoClient(connection_url)
+client.list_database_names()  # listing the available databases
+
+db_name = "skripsi"
+db = client[db_name]
+datasets_collection = db["datasets"]
+text_processings_collection = db["text_processings"]
+
+stop = set(stopwords.words("english"))
+sno = nltk.stem.SnowballStemmer("english")
+
+
+def cleanhtml(sentence):
+    cleanr = re.compile("<.*?>")
+    cleantext = re.sub(cleanr, " ", sentence)
+    return cleantext
+
+
+def cleanpunc(sentence):
+    cleaned = re.sub(r'[?|!|\'|"|#]', r"", sentence)
+    cleaned = re.sub(r"[.|,|)|(|\|/]", r" ", cleaned)
+    return cleaned
+
+
+def posneg(x):
+    if x == "negative":
+        return 0
+    elif x == "positive":
+        return 1
+    return x
+
+
+i = 0
+str1 = " "
+final_string = []
+all_positive_words = []
+all_negative_words = []
+s = ""
+labels = []
+# 1. find text review from datasets collection
+datasets = datasets_collection.find({})
+payload_text_processings = []
+
+for text in datasets:
+    filtered_sentence = []
+    id = text["_id"]
+    label = text["sentiment"]
+    text_orig = text["review"]
+    text = cleanhtml(text["review"])
+    for w in text.split():
+        for cleaned_words in cleanpunc(w).split():
+            if (cleaned_words.isalpha()) & (len(cleaned_words) > 2):
+                if cleaned_words.lower() not in stop:
+                    s = (sno.stem(cleaned_words.lower())).encode("utf8")
+                    filtered_sentence.append(s)
+                    if label == "positive":
+                        # insert to positive words collection
+                        all_positive_words.append(s)
+                    if label == "negative":
+                        # insert to negative words collection
+                        all_negative_words.append(s)
+                else:
+                    continue
+            else:
+                continue
+
+    # append label
+    labels.append(label)
+    # join word
+    str1 = b" ".join(filtered_sentence)
+    # append text processed to text_processings for insert many
+    payload_text_processings.append(
+        {"text": text_orig, "textProcessed": str1.decode(), "label": label}
+    )
+    final_string.append(str1)
+    i += 1
+
+# insert many to text_processings collection
+text_processings_collection.insert_many(payload_text_processings)
+print("ok")
+seconds = time.time() - start_time
+print("Time Execution:", time.strftime("%H:%M:%S", time.gmtime(seconds)))

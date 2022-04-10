@@ -1,95 +1,96 @@
-import pymongo
-import re
-import nltk
+# import time
 
+# start_time = time.time()
+
+from pymongo import MongoClient  # MongoDB driver
+from pandas import DataFrame
+
+# Natural language tool kits
+# import nltk
+from nltk import word_tokenize
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.stem.porter import PorterStemmer
+from nltk.stem import WordNetLemmatizer
 
-connection_url="mongodb://localhost:27017/" #MongoDB compass local host URL. You can replace the SRV string if you are connecting with mongodb atlas
+# required on first install
+# download stopwords and nltk punctuation
+# nltk.download("stopwords")
+# nltk.download("punkt")
+# nltk.download("wordnet")
+
+# string operations
+from string import punctuation
+import re
+
+connection_url = "mongodb://localhost:27017/"  # MongoDB compass local host URL. You can replace the SRV string if you are connecting with mongodb atlas
 # connection_url = "mongodb+srv://ngadimin:uvIVS1HWYm6C9MVX@cluster0.sdb0e.mongodb.net/?retryWrites=true&w=majority"
-client = pymongo.MongoClient(connection_url)
-client.list_database_names() #listing the available databases
+client = MongoClient(connection_url)
 
 db_name = "skripsi"
-skripsi_db = client[db_name]
-datasets_collection = skripsi_db['datasets']
-datasets_backup_collection = skripsi_db['datasets_backup']
-text_processings_collection = skripsi_db['text_processings']
-classifications_collection = skripsi_db['classifications']
-positive_words_collection = skripsi_db['positive_words']
-negative_words_collection = skripsi_db['negative_words']
-testing_collection = skripsi_db['testing']
+db = client[db_name]
+datasets_collection = db["datasets"]
+text_processings_collection = db["text_processings2"]
+# find datasets collection from mongodb
+datasets = datasets_collection.find()
+df = DataFrame(list(datasets))
+# delete _id
+del df["_id"]
+# ge tlist stopwords n punctuations
+sw = stopwords.words("english")
 
-stop = set(stopwords.words('english')) 
-sno = nltk.stem.SnowballStemmer('english') 
+# Function transform text for cleansing process
+def transform_text(s):
 
-def cleanhtml(sentence): 
-  cleanr = re.compile('<.*?>')
-  cleantext = re.sub(cleanr, ' ', sentence)
-  return cleantext
-def cleanpunc(sentence): 
-  cleaned = re.sub(r'[?|!|\'|"|#]',r'',sentence)
-  cleaned = re.sub(r'[.|,|)|(|\|/]',r' ',cleaned)
-  return cleaned
+    # remove html
+    html = re.compile(r"<.*?>")
+    s = html.sub(r"", s)
 
-i=0
-str1=' '
-final_string=[]
-all_positive_words=[]
-all_negative_words=[]
-s=''
-labels=[]
-text_processings = text_processings_collection.find({})
-for text in text_processings:
-  filtered_sentence=[]
-  id=text['_id']
-  label=text['label']
-  text=cleanhtml(text['text'])
-  for w in text.split():
-    for cleaned_words in cleanpunc(w).split():
-      if((cleaned_words.isalpha()) & (len(cleaned_words)>2)):
-        if(cleaned_words.lower() not in stop):
-          s=(sno.stem(cleaned_words.lower())).encode('utf8')
-          filtered_sentence.append(s)
-          if label == 'pos':
-            # insert to positive words collection
-            all_positive_words.append(s)
-            # positive_words_collection.insert_one({'word': s.decode()})
-          if label == 'neg':
-            # insert to negative words collection
-            all_negative_words.append(s)
-            # negative_words_collection.insert_one({'word': s.decode()})
-        else:
-          continue
-      else:
-        continue
+    # remove numbers
+    s = re.sub(r"\d+", "", s)
 
-  # append label
-  labels.append(label)
-  # join word
-  str1 = b" ".join(filtered_sentence)
-  # print(str1.decode())
-  # text_processings_collection.update_one({ '_id': id },{'$set':{'after': str1.decode()}})
-  # if label == 'unsup':
-    # insert to classification
-    # classifications_collection.insert_one({ 'text': s.decode() })
-  final_string.append(str1)
-  i+=1
+    # remove punctuation
+    # remove stopwords
+    tokens = word_tokenize(s)
 
-# data['cleaned_review']=final_string
+    new_string = []
+    for w in tokens:
+        # remove words with len = 2 AND stopwords
+        if len(w) > 2 and w not in sw:
+            new_string.append(w)
 
-def posneg(x):
-  if x=="neg":
-    return 0
-  elif x=="pos":
-    return 1
-  return x
+    s = " ".join(new_string)
+    s = s.strip()
 
-print(labels)
-filtered_score = labels.map(posneg)
-data['score'] = filtered_score
-# print(data['score'])
+    exclude = set(punctuation)
+    s = "".join(ch for ch in s if ch not in exclude)
 
-print('ok')
+    return s.strip()
+
+
+# Process Stemming text
+lemmatizer = WordNetLemmatizer()  # lemmatizer
+
+
+def lemmatizer_text(s):
+    tokens = word_tokenize(s)
+
+    new_string = []
+    for w in tokens:
+        lem = lemmatizer.lemmatize(w, pos="v")
+        # exclude if lenght of lemma is smaller than 2
+        if len(lem) > 2:
+            new_string.append(lem)
+
+    s = " ".join(new_string)
+    return s.strip()
+
+
+df["textProcessed"] = df["review"].str.lower()
+df["textProcessed"] = df["textProcessed"].apply(transform_text)
+df["textProcessed"] = df["textProcessed"].apply(lemmatizer_text)
+
+dataframe = df.to_dict("records")
+text_processings_collection.insert_many(dataframe)
+
+# print(">>> Bulk Insert 50k data from panda dataframe without chunk")
+# seconds = time.time() - start_time
+# print("Time Execution:", time.strftime("%H:%M:%S", time.gmtime(seconds)))
