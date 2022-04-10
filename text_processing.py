@@ -90,7 +90,7 @@ df["textProcessed"] = df["textProcessed"].apply(lemmatizer_text)
 
 dataframe = df.to_dict("records")
 text_processings_collection.insert_many(dataframe)
-
+print("ok")
 # print(">>> Bulk Insert 50k data from panda dataframe without chunk")
 # seconds = time.time() - start_time
 # print("Time Execution:", time.strftime("%H:%M:%S", time.gmtime(seconds)))
