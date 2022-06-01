@@ -1,6 +1,6 @@
-import time
+# import time
 
-start_time = time.time()
+# start_time = time.time()
 
 from pymongo import MongoClient  # MongoDB driver
 
@@ -32,8 +32,8 @@ tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
 tfidf_transformer.fit(word_count)
 df_idf = DataFrame(tfidf_transformer.idf_, index=feature_names, columns=["idf_weights"])
 # inverse document frequency
-print(">>> Inverse Document Frequency")
-print(df_idf.sort_values(by=["idf_weights"]))
+# print(">>> Inverse Document Frequency")
+# print(df_idf.sort_values(by=["idf_weights"]))
 # tfidf
 tf_idf_vector = tfidf_transformer.transform(word_count)
 df_tfidf = DataFrame(tf_idf_vector.T.todense(), index=feature_names)
@@ -45,10 +45,11 @@ df_tfidf_result.insert(0, column="word", value=words)
 # df_tfidf_result.insert(1, column="df", value=word_count)
 # print(df_tfidf_result)
 
-print(">>> Insert terms to database")
+# print(">>> Insert terms to database")
 terms = df_tfidf_result.to_dict("records")
 terms_collection.insert_many(terms)
 
-print("\n")
-seconds = time.time() - start_time
-print("Time Execution:", time.strftime("%H:%M:%S", time.gmtime(seconds)))
+# print("\n")
+# seconds = time.time() - start_time
+# print("Time Execution:", time.strftime("%H:%M:%S", time.gmtime(seconds)))
+print("ok")
