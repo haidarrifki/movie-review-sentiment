@@ -31,9 +31,15 @@ feature_names = count.get_feature_names()
 tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
 tfidf_transformer.fit(word_count)
 df_idf = DataFrame(tfidf_transformer.idf_, index=feature_names, columns=["idf_weights"])
+idf = DataFrame(word_count.T.todense(), index=feature_names)
+idf_sum = idf.sum(axis=1)
+idf_result = DataFrame(idf_sum, columns=["idf"])
 # inverse document frequency
 # print(">>> Inverse Document Frequency")
 # print(df_idf.sort_values(by=["idf_weights"]))
+# print(">>> Word Count")
+# print(word_count)
+# print(idf_result)
 # tfidf
 tf_idf_vector = tfidf_transformer.transform(word_count)
 df_tfidf = DataFrame(tf_idf_vector.T.todense(), index=feature_names)
@@ -42,7 +48,8 @@ df_tfidf_result = DataFrame(df_tfidf_sum, columns=["tfidf"])
 
 words = df_tfidf_result.index.values
 df_tfidf_result.insert(0, column="word", value=words)
-# df_tfidf_result.insert(1, column="df", value=word_count)
+df_tfidf_result.insert(1, column="df", value=idf_result)
+# print('>>> DF TFIDF RESULT')
 # print(df_tfidf_result)
 
 # print(">>> Insert terms to database")
