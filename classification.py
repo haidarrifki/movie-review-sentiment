@@ -134,8 +134,12 @@ df_confusion.astype(np.int32)
 # print(df_confusion.round(2))
 # print("\n")
 # print(df_confusion)
+
+# delete old result first
+examinations_collection.delete_many({})
+
 examine_data = {
-    "acc": acc_score,
+    "accuracy": acc_score,
     "true_positive": int(df_confusion["negative"][0]),
     "false_negative": int(df_confusion["negative"][1]),
     "false_positive": int(df_confusion["positive"][0]),
