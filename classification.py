@@ -12,17 +12,34 @@ db_name = "skripsi"
 db = client[db_name]
 examinations_collection = db["examinations"]
 text_processings_collection = db["text_processings"]
+classifications_collection = db["classifications"]
+settings_collection = db["settings"]
 # find datasets collection from mongodb
 datasets = text_processings_collection.find()
 df = DataFrame(list(datasets))
 
+total_classifications = text_processings_collection.count_documents({})
+settings = settings_collection.find_one({})
+total_train_dataset = settings["firstRatio"] / 100 * total_classifications
+total_train_dataset = total_train_dataset / 2
+total_test_dataset = settings["secondRatio"] / 100 * total_classifications
+total_test_dataset = total_test_dataset / 2
+
 # Train dataset (first 17.500 rows)
-pos_train = df[df["sentiment"] == "positive"][["textProcessed", "sentiment"]].head(2000)
-neg_train = df[df["sentiment"] == "negative"][["textProcessed", "sentiment"]].head(2000)
+pos_train = df[df["sentiment"] == "positive"][["textProcessed", "sentiment"]].head(
+    int(total_train_dataset)
+)
+neg_train = df[df["sentiment"] == "negative"][["textProcessed", "sentiment"]].head(
+    int(total_train_dataset)
+)
 
 # Test dataset (last 7.500 rows)
-pos_test = df[df["sentiment"] == "positive"][["textProcessed", "sentiment"]].tail(500)
-neg_test = df[df["sentiment"] == "negative"][["textProcessed", "sentiment"]].tail(500)
+pos_test = df[df["sentiment"] == "positive"][["textProcessed", "sentiment"]].tail(
+    int(total_test_dataset)
+)
+neg_test = df[df["sentiment"] == "negative"][["textProcessed", "sentiment"]].tail(
+    int(total_test_dataset)
+)
 
 # put all toghether again...
 train_df = concat([pos_train, neg_train]).sample(frac=1).reset_index(drop=True)
