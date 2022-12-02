@@ -1,7 +1,3 @@
-# import time
-
-# start_time = time.time()
-
 from pymongo import MongoClient  # MongoDB driver
 from pandas import DataFrame
 
@@ -22,7 +18,6 @@ from string import punctuation
 import re
 
 connection_url = "mongodb://localhost:27017/"  # MongoDB compass local host URL. You can replace the SRV string if you are connecting with mongodb atlas
-# connection_url = "mongodb+srv://ngadimin:uvIVS1HWYm6C9MVX@cluster0.sdb0e.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(connection_url)
 
 db_name = "skripsi"
@@ -91,6 +86,3 @@ df["textProcessed"] = df["textProcessed"].apply(lemmatizer_text)
 dataframe = df.to_dict("records")
 text_processings_collection.insert_many(dataframe)
 print("ok")
-# print(">>> Bulk Insert 50k data from panda dataframe without chunk")
-# seconds = time.time() - start_time
-# print("Time Execution:", time.strftime("%H:%M:%S", time.gmtime(seconds)))

@@ -1,27 +1,18 @@
 import pymongo
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import re
 import nltk
-import seaborn as sns
-import pickle as pkl
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn import metrics
-from sklearn.metrics import roc_curve, auc, classification_report
-from nltk.stem.porter import PorterStemmer
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from nltk.corpus import stopwords
-from collections import Counter
 from sklearn.naive_bayes import MultinomialNB
 
 # DB CONFIG
 connection_url = "mongodb://localhost:27017/"  # MongoDB compass local host URL. You can replace the SRV string if you are connecting with mongodb atlas
-# connection_url = "mongodb+srv://ngadimin:uvIVS1HWYm6C9MVX@cluster0.sdb0e.mongodb.net/?retryWrites=true&w=majority"
 client = pymongo.MongoClient(connection_url)
 db_name = "skripsi"
 db = client[db_name]
@@ -147,13 +138,5 @@ def conv_string(text):
 data["review"] = data["review"].map(conv_string)
 # Insert to classifications
 classifications_collection.insert_many(data.to_dict("records"))
-
-# f = open('classifier.pickle', 'wb')
-# pkl.dump(clf, f)
-# f.close()
-
-# f = open('vectorizer.pickle', 'wb')
-# pkl.dump(count_vect_tfidf, f)
-# f.close()
 
 print("ok")

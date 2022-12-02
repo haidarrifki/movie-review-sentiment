@@ -5,7 +5,6 @@ import numpy as np
 import math
 
 connection_url = "mongodb://localhost:27017/"  # MongoDB compass local host URL. You can replace the SRV string if you are connecting with mongodb atlas
-# connection_url = "mongodb+srv://ngadimin:uvIVS1HWYm6C9MVX@cluster0.sdb0e.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(connection_url)
 
 db_name = "skripsi"
@@ -44,10 +43,6 @@ neg_test = df[df["sentiment"] == "negative"][["textProcessed", "sentiment"]].tai
 # put all toghether again...
 train_df = concat([pos_train, neg_train]).sample(frac=1).reset_index(drop=True)
 test_df = concat([pos_test, neg_test]).sample(frac=1).reset_index(drop=True)
-
-# print(train_df.head())
-# print(test_df.head())
-
 
 def get_word_counts(words):
     word_counts = {}
@@ -91,8 +86,6 @@ word_count_df = (
     .sort_values(by="positive", ascending=False)
     .reset_index()
 )
-# print(word_count_df)
-
 
 def predict(df_predict, vocab, word_counts, num_messages, log_class_priors):
     result = []
@@ -130,27 +123,16 @@ def predict(df_predict, vocab, word_counts, num_messages, log_class_priors):
 result = predict(
     test_df["textProcessed"], vocab, word_counts, num_messages, log_class_priors
 )
-# print(result[0:10])  # result sample...
+
 y_true = test_df["sentiment"].tolist()
 
 acc = sum(1 for i in range(len(y_true)) if result[i] == y_true[i]) / float(len(y_true))
 acc_score = "{:.1%}".format(acc)
-# print("{0:.4f}".format(acc))
-# print("{:.1%}".format(acc))
 
 y_actu = Series(y_true, name="Real")
 y_pred = Series(result, name="Predicted")
 df_confusion = crosstab(y_actu, y_pred)
 df_confusion.astype(np.int32)
-# print(df_confusion)
-# print(df_confusion["negative"][0])  # true_positive
-# print(df_confusion["negative"][1])  # false_negative
-# print(df_confusion["positive"][0])  # false_positive
-# print(df_confusion["positive"][1])  # true_negative
-# df_confusion = df_confusion / df_confusion.sum(axis=1) * 100
-# print(df_confusion.round(2))
-# print("\n")
-# print(df_confusion)
 
 # delete old result first
 examinations_collection.delete_many({})
